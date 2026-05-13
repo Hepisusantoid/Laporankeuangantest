@@ -1,0 +1,380 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Laporan Keuangan</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=6">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
+</head>
+<body>
+
+  <!-- Appbar -->
+  <header class="appbar">
+    <div class="appbar-left">
+      <div class="logo-icon">₿</div>
+      <h1>LapKeu</h1>
+    </div>
+    <div class="appbar-right">
+      <button id="btn-theme" class="icon-btn" title="Ganti tema">🌙</button>
+      <button id="btn-export" class="icon-btn" title="Export CSV" hidden>⬇</button>
+      <button id="btn-login" class="btn sm">Masuk</button>
+      <button id="btn-logout" class="btn sm danger-outline" hidden>Keluar</button>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- ===== Login Card ===== -->
+    <section id="screen-login" class="card login-card">
+      <div class="login-icon">🔐</div>
+      <h2>Selamat Datang</h2>
+      <p class="muted">Masuk untuk melanjutkan. PIN tersimpan aman di server.</p>
+      <label>PIN Admin
+        <input id="pin" type="password" inputmode="numeric" placeholder="4–8 digit" autocomplete="current-password">
+      </label>
+      <button id="do-login" class="btn primary full">Masuk</button>
+      <p id="login-error" class="error" hidden></p>
+    </section>
+
+    <!-- ===== App Screen ===== -->
+    <section id="screen-app" class="hidden">
+
+      <!-- Stats -->
+      <div class="stats-grid">
+        <div class="stat-card income">
+          <div class="stat-icon">📈</div>
+          <div class="stat-label">Total Pemasukan</div>
+          <div id="sum-in" class="stat-val">Rp 0</div>
+        </div>
+        <div class="stat-card expense">
+          <div class="stat-icon">📉</div>
+          <div class="stat-label">Total Pengeluaran</div>
+          <div id="sum-out" class="stat-val">Rp 0</div>
+        </div>
+        <div class="stat-card balance">
+          <div class="stat-icon">💰</div>
+          <div class="stat-label">Saldo Akhir</div>
+          <div id="sum-balance" class="stat-val">Rp 0</div>
+        </div>
+      </div>
+
+      <!-- Filter Bar -->
+      <div class="filter-bar card">
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input id="search-input" type="text" placeholder="Cari keterangan, sektor..." class="search-input">
+          <button id="clear-search" class="clear-btn hidden">✕</button>
+        </div>
+        <div class="filter-selects">
+          <select id="filter-month">
+            <option value="ALL">Semua Bulan</option>
+          </select>
+          <select id="filter-type">
+            <option value="ALL">Semua Jenis</option>
+            <option value="Pemasukan">Pemasukan</option>
+            <option value="Pengeluaran">Pengeluaran</option>
+          </select>
+          <select id="filter-sector">
+            <option value="ALL">Semua Sektor</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <button id="open-add" class="btn primary">＋ Tambah Transaksi</button>
+        <button id="open-calc" class="btn secondary">🧮 Kalkulator</button>
+      </div>
+
+      <!-- Riwayat Transaksi -->
+      <section class="card">
+        <div class="section-header">
+          <h2>Riwayat Transaksi</h2>
+          <span id="tx-count" class="badge">0 data</span>
+        </div>
+        <div class="table-block tbl-transactions">
+          <div class="table-wrap limited">
+            <table class="table" aria-label="Daftar Transaksi">
+              <thead>
+                <tr>
+                  <th>Tanggal</th>
+                  <th>Keterangan</th>
+                  <th>Sektor</th>
+                  <th>Jenis</th>
+                  <th class="right">Jumlah</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="tbody"></tbody>
+            </table>
+          </div>
+          <div id="empty-tx" class="empty-state hidden">
+            <div class="empty-icon">📋</div>
+            <p>Tidak ada transaksi ditemukan</p>
+          </div>
+          <button class="btn link toggle-full">Lihat semua</button>
+        </div>
+      </section>
+
+      <!-- Analisis & Diagram -->
+      <section class="card">
+        <div class="section-header">
+          <h2>Analisis &amp; Diagram</h2>
+          <div class="chart-period-tabs">
+            <button class="ctab active" data-period="filter">Filter</button>
+            <button class="ctab" data-period="all">Semua</button>
+          </div>
+        </div>
+        <div class="charts-grid">
+
+          <div class="chart-card full-width">
+            <div class="chart-title">📊 Saldo Kumulatif</div>
+            <div class="chart-wrap tall">
+              <canvas id="chartBalance"></canvas>
+              <div class="nodata hidden">Belum ada data</div>
+            </div>
+          </div>
+
+          <div class="chart-card">
+            <div class="chart-title">📅 Pemasukan vs Pengeluaran per Bulan</div>
+            <div class="chart-wrap">
+              <canvas id="chartMonthly"></canvas>
+              <div class="nodata hidden">Belum ada data</div>
+            </div>
+          </div>
+
+          <div class="chart-card">
+            <div class="chart-title">📈 Tren Bulanan</div>
+            <div class="chart-wrap">
+              <canvas id="chartMonthlyLine"></canvas>
+              <div class="nodata hidden">Belum ada data</div>
+            </div>
+          </div>
+
+          <div class="chart-card">
+            <div class="chart-title">🥧 Komposisi Total</div>
+            <div class="chart-wrap">
+              <canvas id="chartShare"></canvas>
+              <div class="nodata hidden">Belum ada data</div>
+            </div>
+          </div>
+
+          <div class="chart-card">
+            <div class="chart-title">🟢 Sektor Pemasukan</div>
+            <div class="chart-wrap">
+              <canvas id="chartIncomeSector"></canvas>
+              <div class="nodata hidden">Belum ada data</div>
+            </div>
+          </div>
+
+          <div class="chart-card">
+            <div class="chart-title">🔴 Sektor Pengeluaran</div>
+            <div class="chart-wrap">
+              <canvas id="chartExpenseSector"></canvas>
+              <div class="nodata hidden">Belum ada data</div>
+            </div>
+          </div>
+
+          <div class="chart-card full-width">
+            <div class="chart-title">🔥 Top 5 Pengeluaran Terbesar</div>
+            <div class="chart-wrap">
+              <canvas id="chartTopExpense"></canvas>
+              <div class="nodata hidden">Belum ada data</div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- Laporan Ringkas -->
+      <section class="card">
+        <h2>Laporan Ringkas</h2>
+        <div class="tabs" role="tablist">
+          <button class="tab active" data-target="#rp-day">Harian</button>
+          <button class="tab" data-target="#rp-week">Mingguan</button>
+          <button class="tab" data-target="#rp-month">Bulanan</button>
+          <button class="tab" data-target="#rp-year">Tahunan</button>
+        </div>
+
+        <div id="rp-day" class="tabpane active">
+          <div class="table-block tbl-report">
+            <div class="table-wrap limited">
+              <table class="table mini-table">
+                <thead><tr><th>Periode</th><th class="right">Pemasukan</th><th class="right">Pengeluaran</th><th class="right">Saldo</th></tr></thead>
+                <tbody id="tb-harian"></tbody>
+              </table>
+            </div>
+            <button class="btn link toggle-full">Lihat semua</button>
+          </div>
+        </div>
+
+        <div id="rp-week" class="tabpane">
+          <div class="table-block tbl-report">
+            <div class="table-wrap limited">
+              <table class="table mini-table">
+                <thead><tr><th>Periode</th><th class="right">Pemasukan</th><th class="right">Pengeluaran</th><th class="right">Saldo</th></tr></thead>
+                <tbody id="tb-mingguan"></tbody>
+              </table>
+            </div>
+            <button class="btn link toggle-full">Lihat semua</button>
+          </div>
+        </div>
+
+        <div id="rp-month" class="tabpane">
+          <div class="table-block tbl-report">
+            <div class="table-wrap limited">
+              <table class="table mini-table">
+                <thead><tr><th>Periode</th><th class="right">Pemasukan</th><th class="right">Pengeluaran</th><th class="right">Saldo</th></tr></thead>
+                <tbody id="tb-bulanan"></tbody>
+              </table>
+            </div>
+            <button class="btn link toggle-full">Lihat semua</button>
+          </div>
+        </div>
+
+        <div id="rp-year" class="tabpane">
+          <div class="table-block tbl-report">
+            <div class="table-wrap limited">
+              <table class="table mini-table">
+                <thead><tr><th>Periode</th><th class="right">Pemasukan</th><th class="right">Pengeluaran</th><th class="right">Saldo</th></tr></thead>
+                <tbody id="tb-tahunan"></tbody>
+              </table>
+            </div>
+            <button class="btn link toggle-full">Lihat semua</button>
+          </div>
+        </div>
+      </section>
+
+    </section>
+  </main>
+
+  <!-- ===== MODAL: Tambah/Edit ===== -->
+  <dialog id="modal-tx" class="modal">
+    <div class="modal-card">
+      <div class="modal-handle"></div>
+      <h2 id="modal-title">Tambah Transaksi Baru</h2>
+      <form id="form-tx">
+        <input id="tx-id" type="hidden">
+
+        <div class="form-row-2">
+          <label>Jenis Transaksi
+            <div class="type-toggle">
+              <button type="button" id="type-in" class="type-btn active" data-val="Pemasukan">📈 Pemasukan</button>
+              <button type="button" id="type-out" class="type-btn" data-val="Pengeluaran">📉 Pengeluaran</button>
+            </div>
+            <input id="tx-type" type="hidden" value="Pemasukan">
+          </label>
+        </div>
+
+        <div class="form-row-2">
+          <label>Keterangan
+            <input id="tx-note" placeholder="contoh: Jual gabah, Beli pupuk...">
+          </label>
+          <label>Sektor / Kategori
+            <div class="sector-wrap">
+              <select id="tx-sector-preset" class="sector-preset">
+                <option value="">— Pilih preset —</option>
+                <optgroup label="Pertanian">
+                  <option value="Pertanian - Padi">Padi</option>
+                  <option value="Pertanian - Pupuk">Pupuk</option>
+                  <option value="Pertanian - Pestisida">Pestisida</option>
+                  <option value="Pertanian - Alat">Alat Pertanian</option>
+                  <option value="Pertanian - Sewa Lahan">Sewa Lahan</option>
+                  <option value="Pertanian - Upah">Upah Buruh</option>
+                </optgroup>
+                <optgroup label="Bisnis & Usaha">
+                  <option value="Perdagangan">Perdagangan</option>
+                  <option value="Jasa">Jasa</option>
+                  <option value="Online - Crypto">Crypto / Web3</option>
+                  <option value="Online - Konten">Konten Creator</option>
+                  <option value="Investasi">Investasi</option>
+                </optgroup>
+                <optgroup label="Rumah Tangga">
+                  <option value="Kebutuhan Pokok">Kebutuhan Pokok</option>
+                  <option value="Listrik & Air">Listrik & Air</option>
+                  <option value="Kesehatan">Kesehatan</option>
+                  <option value="Pendidikan">Pendidikan</option>
+                  <option value="Transportasi">Transportasi</option>
+                </optgroup>
+                <optgroup label="Lainnya">
+                  <option value="Tabungan">Tabungan</option>
+                  <option value="Lain-lain">Lain-lain</option>
+                </optgroup>
+              </select>
+              <input id="tx-sector" placeholder="atau ketik manual..." class="sector-manual">
+            </div>
+          </label>
+        </div>
+
+        <div class="form-row-2">
+          <label>Jumlah (Rp)
+            <div class="amount-wrap">
+              <span class="amount-prefix">Rp</span>
+              <input id="tx-amount" inputmode="numeric" placeholder="100.000">
+            </div>
+            <small class="muted">Otomatis format ribuan</small>
+          </label>
+          <label>Tanggal
+            <input id="tx-date" type="date">
+          </label>
+        </div>
+
+        <p id="form-error" class="error" hidden></p>
+
+        <div class="form-actions">
+          <button id="btn-cancel" type="button" class="btn">Batal</button>
+          <button class="btn primary" type="submit">💾 Simpan</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
+  <!-- ===== MODAL: Kalkulator ===== -->
+  <dialog id="modal-calc" class="modal">
+    <div class="modal-card">
+      <div class="modal-handle"></div>
+      <h2>🧮 Kalkulator</h2>
+      <div class="calc-history" id="calc-history"></div>
+      <input id="calc-display" class="calc-display" readonly value="0">
+      <div class="calc-grid">
+        <button class="calc-fn">(</button>
+        <button class="calc-fn">)</button>
+        <button class="calc-fn" data-clear>C</button>
+        <button class="calc-fn danger">⌫</button>
+        <button>7</button><button>8</button><button>9</button><button class="calc-op">/</button>
+        <button>4</button><button>5</button><button>6</button><button class="calc-op">*</button>
+        <button>1</button><button>2</button><button>3</button><button class="calc-op">-</button>
+        <button>0</button><button>.</button>
+        <button class="calc-eq wide">=</button>
+        <button class="calc-op">+</button>
+      </div>
+      <button id="calc-use" class="btn primary full" style="margin-top:10px">Pakai Angka Ini →</button>
+      <button id="close-calc" class="btn link full">Tutup</button>
+    </div>
+  </dialog>
+
+  <!-- ===== MODAL: Konfirmasi Hapus ===== -->
+  <dialog id="modal-confirm" class="modal confirm-modal">
+    <div class="modal-card small">
+      <div class="modal-handle"></div>
+      <div class="confirm-icon">🗑️</div>
+      <h3>Hapus Transaksi?</h3>
+      <p class="muted" id="confirm-desc">Tindakan ini tidak dapat dibatalkan.</p>
+      <div class="form-actions">
+        <button id="confirm-no" class="btn">Batal</button>
+        <button id="confirm-yes" class="btn danger">Hapus</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- ===== Toast ===== -->
+  <div id="toast-container"></div>
+
+  <!-- JS -->
+  <script src="login.js?v=6" defer></script>
+  <script src="script.js?v=6" defer></script>
+</body>
+</html>
